@@ -582,7 +582,6 @@
 #  define RCC_D1CCIPR_SDMMC_PLL1        (0 << RCC_D1CCIPR_SDMMC_SHIFT)
 #  define RCC_D1CCIPR_SDMMC_PLL2        (1 << RCC_D1CCIPR_SDMMC_SHIFT)
                                                     /* Bits 17-27: Reserved */
-                                                    /* Bits 17-27: Reserved */
 #define RCC_D1CCIPR_CKPERSEL_SHIFT      (28)        /* Bits 28-29: */
 #define RCC_D1CCIPR_CKPERSEL_MASK       (3 << RCC_D1CCIPR_CKPERSEL_SHIFT)
 #  define RCC_D1CCIPR_CKPERSEL_HSI      (0 << RCC_D1CCIPR_CKPERSEL_SHIFT)
@@ -740,7 +739,6 @@
 #   define RCC_D3CCIPR_SPI6SEL_CSI       (4 << RCC_D3CCIPR_SPI6SEL_SHIFT)
 #   define RCC_D3CCIPR_SPI6SEL_HSE       (5 << RCC_D3CCIPR_SPI6SEL_SHIFT)
                                                     /* Bit 31: Reserved */
-                                                    /* ... */
 
 /* TODO: CIER */
 
@@ -1222,6 +1220,7 @@
                                                     /* 10: LSI oscillator clock used as RTC clock */
 #  define RCC_BDCR_RTCSEL_HSE           (3 << RCC_BDCR_RTCSEL_SHIFT)
                                                     /* 11: HSE oscillator clock divided by 128 used as RTC clock */
+
                                                     /* Bits 10-15: Reserved */
 #define RCC_BDCR_RTCEN                  (1 << 15)   /* Bit 15: RTC clock enable */
 #define RCC_BDCR_BDRST                  (1 << 16)   /* Bit 16: Backup domain software reset */
