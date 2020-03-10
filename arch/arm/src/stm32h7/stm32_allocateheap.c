@@ -250,13 +250,9 @@ void up_allocate_heap(FAR void **heap_start, size_t *heap_size)
   up_heap_color(*heap_start, *heap_size);
 #endif
 
-#if defined(CONFIG_DEBUG_FEATURES)
-
   /* Display memory ranges to help debugging */
 
-  _info("%uKb of SRAM at %p\n", *heap_size / 1024, *heap_start);
-
-#endif
+  minfo("%uKb of SRAM at %p\n", *heap_size / 1024, *heap_start);
 }
 
 /****************************************************************************
@@ -315,6 +311,10 @@ void up_allocate_kheap(FAR void **heap_start, size_t *heap_size)
 
 static void addregion (uintptr_t start, uint32_t size, const char *desc)
 {
+  /* Display memory ranges to help debugging */
+
+  minfo("%uKb of %s at %p\n", size / 1024, desc, (FAR void *)start);
+
 #if defined(CONFIG_BUILD_PROTECTED) && defined(CONFIG_MM_KERNEL_HEAP)
 
   /* Allow user-mode access to the SRAM123 heap */
@@ -330,14 +330,6 @@ static void addregion (uintptr_t start, uint32_t size, const char *desc)
   /* Add the SRAM123 user heap region. */
 
   kumm_addregion((FAR void *)start, size);
-
-#if defined(CONFIG_DEBUG_FEATURES)
-
-  /* Display memory ranges to help debugging */
-
-  _info("%uKb of %s at %p\n", size / 1024, desc, (FAR void *)start);
-
-#endif
 }
 
 /****************************************************************************
