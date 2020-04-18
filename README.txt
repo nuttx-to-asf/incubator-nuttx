@@ -6,6 +6,7 @@ README
     - Ubuntu Bash under Windows 10
     - Using macOS
   o Installation
+    - test
     - Download and Unpack
     - Semi-Optional apps/ Package
     - Installation Directories with Spaces in the Path
