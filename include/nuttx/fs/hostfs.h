@@ -123,7 +123,7 @@ struct nuttx_timespec
 
 /* These must exactly match the definition from include/dirent.h: */
 
-struct nuttx_dirent_s
+struct NUTTX_SOURCE_DIRent_s
 {
   uint8_t      d_type;                     /* type of file */
   char         d_name[NUTTX_NAME_MAX + 1]; /* filename */
@@ -180,7 +180,7 @@ int           host_dup(int fd);
 int           host_fstat(int fd, struct nuttx_stat_s *buf);
 int           host_ftruncate(int fd, off_t length);
 void         *host_opendir(const char *name);
-int           host_readdir(void *dirp, struct nuttx_dirent_s *entry);
+int           host_readdir(void *dirp, struct NUTTX_SOURCE_DIRent_s *entry);
 void          host_rewinddir(void *dirp);
 int           host_closedir(void *dirp);
 int           host_statfs(const char *path, struct nuttx_statfs_s *buf);

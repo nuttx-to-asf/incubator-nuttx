@@ -343,7 +343,7 @@ void *host_opendir(const char *name)
  * Name: host_readdir
  ****************************************************************************/
 
-int host_readdir(void *dirp, struct nuttx_dirent_s *entry)
+int host_readdir(void *dirp, struct NUTTX_SOURCE_DIRent_s *entry)
 {
   struct dirent *ent;
 

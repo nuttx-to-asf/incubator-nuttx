@@ -26,9 +26,9 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Release;RelWithDebIn
 
 # Process board config & directory locations #################################
 
-set(NUTTX_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(NUTTX_APPS_DIR "../apps" CACHE FILEPATH "Relative path to apps/ directory")
-get_filename_component(NUTTX_APPS_ABS_DIR ${NUTTX_APPS_DIR} ABSOLUTE BASE_DIR ${NUTTX_DIR})
+set(NUTTX_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(NUTTX_APPS_SOURCE_DIR "../apps" CACHE FILEPATH "Relative path to apps/ directory")
+get_filename_component(NUTTX_APPS_ABS_DIR ${NUTTX_APPS_SOURCE_DIR} ABSOLUTE BASE_DIR ${NUTTX_SOURCE_DIR})
 
 # Board/config combination
 set(NUTTX_CONFIG "nsh" CACHE STRING "Board confguration")
@@ -36,7 +36,7 @@ if (NOT DEFINED NUTTX_BOARD)
 	message(FATAL_ERROR "Please define a board with NUTTX_BOARD and configuration with NUTTX_CONFIG")
 endif()
 
-set(BOARD_PATH "${NUTTX_DIR}/boards/${NUTTX_BOARD}")
+set(BOARD_PATH "${NUTTX_SOURCE_DIR}/boards/${NUTTX_BOARD}")
 if (NOT EXISTS "${BOARD_PATH}/CMakeLists.txt")
 	message(FATAL_ERROR "No CMakeList.txt found at ${BOARD_PATH} for ${NUTTX_BOARD}")
 endif()
@@ -47,13 +47,14 @@ if (NOT EXISTS "${NUTTX_DEFCONFIG}")
   message(FATAL_ERROR "No config file found at ${NUTTX_DEFCONFIG}")
 endif()
 
-# Generate inital .config ###################################################
+
+################
 # This is needed right before any other configure step so that we can source
 # Kconfig variables into CMake variables
 
 # The following commands need these variables to be passed via environment
 
-set(ENV{APPSDIR} ${NUTTX_APPS_DIR}) # TODO: support not having apps/
+set(ENV{APPSDIR} ${NUTTX_APPS_SOURCE_DIR}) # TODO: support not having apps/
 set(ENV{EXTERNALDIR} dummy) # TODO
 set(ENV{DRIVERS_PLATFORM_DIR} dummy) # TODO
 
@@ -75,7 +76,7 @@ if (NOT EXISTS ${CMAKE_BINARY_DIR}/.config OR
     COMMAND kconfig-conf --olddefconfig Kconfig
     OUTPUT_VARIABLE KCONFIG_OUTPUT
     RESULT_VARIABLE KCONFIG_STATUS
-    WORKING_DIRECTORY ${NUTTX_DIR}
+    WORKING_DIRECTORY ${NUTTX_SOURCE_DIR}
   )
 
   file(RENAME ${CMAKE_BINARY_DIR}/.config.compressed ${CMAKE_BINARY_DIR}/.config)
@@ -94,7 +95,7 @@ if (NOT EXISTS ${CMAKE_BINARY_DIR}/.config OR
 
   message(STATUS "  Board: ${NUTTX_BOARD}")
   message(STATUS "  Config: ${NUTTX_CONFIG}")
-  message(STATUS "  Appdir: ${NUTTX_APPS_DIR}")
+  message(STATUS "  Appdir: ${NUTTX_APPS_SOURCE_DIR}")
 endif()
 
 # Include .cmake files #######################################################
@@ -229,13 +230,13 @@ add_subdirectory(boards)
 
 # Add apps/ to the build (if present)
 
-if(EXISTS ${NUTTX_DIR}/${NUTTX_APPS_DIR}/CMakeLists.txt)
-	add_subdirectory(${NUTTX_APPS_DIR} apps)
+if(EXISTS ${NUTTX_SOURCE_DIR}/${NUTTX_APPS_SOURCE_DIR}/CMakeLists.txt)
+	add_subdirectory(${NUTTX_APPS_SOURCE_DIR} apps)
 	
-	execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink dummy ${NUTTX_APPS_DIR}/platform/board
-                  WORKING_DIRECTORY ${NUTTX_APPS_DIR})
+	execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink dummy ${NUTTX_APPS_SOURCE_DIR}/platform/board
+                  WORKING_DIRECTORY ${NUTTX_APPS_SOURCE_DIR})
 else()
-  message(STATUS "Application directory not found at ${NUTTX_APPS_DIR}, skipping")
+  message(STATUS "Application directory not found at ${NUTTX_APPS_SOURCE_DIR}, skipping")
 endif()
 
 # Same for external/

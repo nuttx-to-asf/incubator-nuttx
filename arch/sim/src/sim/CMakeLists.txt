@@ -232,5 +232,5 @@ target_sources(nuttx PRIVATE ${HOSTSRCS})
 target_link_libraries(nuttx PUBLIC ${STDLIBS})
 target_compile_definitions(nuttx PRIVATE ${HOST_DEFINITIONS})
 
-configure_file(${NUTTX_DIR}/include/nuttx/fs/hostfs.h ${CMAKE_BINARY_DIR}/include/host/hostfs.h COPYONLY)
+configure_file(${NUTTX_SOURCE_DIR}/include/nuttx/fs/hostfs.h ${CMAKE_BINARY_DIR}/include/host/hostfs.h COPYONLY)
 target_include_directories(nuttx PRIVATE ${CMAKE_BINARY_DIR}/include/host)

@@ -48,6 +48,6 @@ else()
 endif()
 
 #include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-#include_directories(SYSTEM ${NUTTX_DIR}/include/cxx)
+#include_directories(SYSTEM ${NUTTX_SOURCE_DIR}/include/cxx)
 
 

@@ -3,7 +3,7 @@
 add_custom_command(
 	OUTPUT ${CMAKE_BINARY_DIR}/.version
 	COMMAND tools/version.sh -b ${CONFIG_VERSION_BUILD} -v ${CONFIG_VERSION_STRING}  ${CMAKE_BINARY_DIR}/.version
-	WORKING_DIRECTORY ${NUTTX_DIR}
+	WORKING_DIRECTORY ${NUTTX_SOURCE_DIR}
   DEPENDS ${CMAKE_BINARY_DIR}/.config
 )
 
@@ -23,7 +23,7 @@ add_custom_command(
 		nuttx_host_tools
 		${CMAKE_BINARY_DIR}/.config
 		${CMAKE_BINARY_DIR}/.version
-	WORKING_DIRECTORY ${NUTTX_DIR}
+	WORKING_DIRECTORY ${NUTTX_SOURCE_DIR}
 )
 
 # Setup symbolic link generation 
@@ -37,10 +37,10 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/include_nuttx
   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/include_apps
 
-	COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_DIR}/arch/${CONFIG_ARCH}/include ${CMAKE_BINARY_DIR}/include/arch # include/arch
-	COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_DIR}/boards/${NUTTX_BOARD}/include ${CMAKE_BINARY_DIR}/include_arch/arch/board	# include/arch/board
-	COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_DIR}/arch/${CONFIG_ARCH}/include/${CONFIG_ARCH_CHIP} ${CMAKE_BINARY_DIR}/include_arch/arch/chip	# include/arch/chip
-  COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_DIR}/include/nuttx ${CMAKE_BINARY_DIR}/include_nuttx/nuttx # include/nuttx
+	COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_SOURCE_DIR}/arch/${CONFIG_ARCH}/include ${CMAKE_BINARY_DIR}/include/arch # include/arch
+	COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_SOURCE_DIR}/boards/${NUTTX_BOARD}/include ${CMAKE_BINARY_DIR}/include_arch/arch/board	# include/arch/board
+	COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_SOURCE_DIR}/arch/${CONFIG_ARCH}/include/${CONFIG_ARCH_CHIP} ${CMAKE_BINARY_DIR}/include_arch/arch/chip	# include/arch/chip
+  COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_SOURCE_DIR}/include/nuttx ${CMAKE_BINARY_DIR}/include_nuttx/nuttx # include/nuttx
 
 	COMMAND ${CMAKE_COMMAND} -E touch nuttx_symlinks.stamp
 	DEPENDS
@@ -56,7 +56,7 @@ add_custom_command(
 
 add_custom_command(
   OUTPUT include/stdarg.h
-  COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_DIR}/include/nuttx/lib/stdarg.h ${CMAKE_BINARY_DIR}/include/stdarg.h
+  COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_SOURCE_DIR}/include/nuttx/lib/stdarg.h ${CMAKE_BINARY_DIR}/include/stdarg.h
 )
 
 # Target used to copy include/nuttx/lib/math.h.  If CONFIG_ARCH_MATH_H is
@@ -84,7 +84,7 @@ endif()
 
 add_custom_command(
   OUTPUT include/math.h
-  COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_DIR}/include/nuttx/lib/math.h ${CMAKE_BINARY_DIR}/include/math.h
+  COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_SOURCE_DIR}/include/nuttx/lib/math.h ${CMAKE_BINARY_DIR}/include/math.h
 )
 
 # The float.h header file defines the properties of your floating point
@@ -95,7 +95,7 @@ add_custom_command(
 
 add_custom_command(
   OUTPUT include/float.h
-  COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_DIR}/include/nuttx/lib/float.h ${CMAKE_BINARY_DIR}/include/float.h
+  COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_SOURCE_DIR}/include/nuttx/lib/float.h ${CMAKE_BINARY_DIR}/include/float.h
 )
 
 # Target used to copy include/nuttx/lib/setjmp.h.  If CONFIG_ARCH_SETJMP_H is
@@ -105,7 +105,7 @@ add_custom_command(
 
 add_custom_command(
   OUTPUT include/setjmp.h
-  COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_DIR}/include/nuttx/lib/setjmp.h ${CMAKE_BINARY_DIR}/include/setjmp.h
+  COMMAND ${CMAKE_COMMAND} -E create_symlink ${NUTTX_SOURCE_DIR}/include/nuttx/lib/setjmp.h ${CMAKE_BINARY_DIR}/include/setjmp.h
 )
 
 # Add final context target that ties together all of the above

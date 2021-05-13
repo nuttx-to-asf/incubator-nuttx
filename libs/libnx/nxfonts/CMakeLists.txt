@@ -8,7 +8,7 @@ endfunction()
 if (CONFIG_NXFONTS)
   nuttx_add_aux_library(nxfonts)
   target_include_directories(nxfonts PRIVATE ${CMAKE_CURRENT_LIST_DIR})
-  target_include_directories(nxfonts PRIVATE ${NUTTX_DIR}/libs/libnx)
+  target_include_directories(nxfonts PRIVATE ${NUTTX_SOURCE_DIR}/libs/libnx)
 
   # Font conversion operations ###############################################
 
