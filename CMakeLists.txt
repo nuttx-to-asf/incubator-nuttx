@@ -26,6 +26,12 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Release;RelWithDebIn
 
 # Process board config & directory locations #################################
 
+# Deal with the exception
+
+if(NUTTX_BOARD MATCHES "sim")
+	set(NUTTX_BOARD "sim/sim/sim")
+endif()
+
 set(NUTTX_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(NUTTX_APPS_SOURCE_DIR "../apps" CACHE FILEPATH "Relative path to apps/ directory")
 get_filename_component(NUTTX_APPS_ABS_DIR ${NUTTX_APPS_SOURCE_DIR} ABSOLUTE BASE_DIR ${NUTTX_SOURCE_DIR})
