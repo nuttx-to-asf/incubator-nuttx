@@ -91,21 +91,15 @@
  */
 
 #ifdef CONFIG_ARMV7M_DCACHE
-/* Align to the cache line size which we assume is >= 8 */
-
-#  define EDMA_ALIGN        ARMV7M_DCACHE_LINESIZE
-#  define EDMA_ALIGN_MASK   (EDMA_ALIGN - 1)
-#  define EDMA_ALIGN_UP(n)  (((n) + EDMA_ALIGN_MASK) & ~EDMA_ALIGN_MASK)
-
+#  define EDMA_ALIGN  ARMV7M_DCACHE_LINESIZE
 #else
-/* Special alignment is not required in this case,
- * but we will align to 8-bytes
- */
+/* 32 byte alignment for TCDs is required for scatter gather */
 
-#  define EDMA_ALIGN        8
-#  define EDMA_ALIGN_MASK   7
-#  define EDMA_ALIGN_UP(n)  (((n) + 7) & ~7)
+#define EDMA_ALIGN        32
 #endif
+
+#define EDMA_ALIGN_MASK   (EDMA_ALIGN - 1)
+#define EDMA_ALIGN_UP(n)  (((n) + EDMA_ALIGN_MASK) & ~EDMA_ALIGN_MASK)
 
 /****************************************************************************
  * Private Types
@@ -124,11 +118,10 @@ enum s32k3xx_dmastate_e
 
 struct s32k3xx_dmach_s
 {
-  uint8_t chan;                   /* DMA channel number (0-S32K3XX_EDMA_NCHANNELS) */
-  bool inuse;                     /* true: The DMA channel is in use */
-  uint8_t dmamux;                 /* The DMAMUX channel selection */
-  uint8_t ttype;                  /* Transfer type: M2M, M2P, P2M, or P2P */
-  uint8_t state;                  /* Channel state.  See enum s32k3xx_dmastate_e */
+  uint8_t  chan;                  /* DMA channel number (0-S32K3XX_EDMA_NCHANNELS) */
+  bool     inuse;                 /* true: The DMA channel is in use */
+  uint8_t  state;                 /* Channel state.  See enum s32k3xx_dmastate_e */
+  uint8_t  dmamux;                /* The DMAMUX channel selection */
   uint32_t flags;                 /* DMA channel flags */
   edma_callback_t callback;       /* Callback invoked when the DMA completes */
   void *arg;                      /* Argument passed to callback function */
@@ -576,18 +569,13 @@ static inline void s32k3xx_tcd_chanlink(uint8_t flags,
 
   if (linkch == NULL || flags == EDMA_CONFIG_LINKTYPE_LINKNONE)
     {
-#if 0 /* Already done */
       /* No link or no link channel provided */
 
-      /* Disable minor links */
-
-      tcd->citer &= ~EDMA_TCD_CITER_ELINK;
-      tcd->biter &= ~EDMA_TCD_BITER_ELINK;
+      /* Disable minor links is done in s32k3xx_tcd_configure */
 
       /* Disable major link */
 
       tcd->csr   &= ~EDMA_TCD_CSR_MAJORELINK;
-#endif
     }
   else if (flags == EDMA_CONFIG_LINKTYPE_MINORLINK) /* Minor link config */
     {
@@ -605,7 +593,7 @@ static inline void s32k3xx_tcd_chanlink(uint8_t flags,
 
       regval16    = tcd->biter;
       regval16   &= ~EDMA_TCD_BITER_LINKCH_MASK;
-      regval16   |= EDMA_TCD_CITER_LINKCH(linkch->chan);
+      regval16   |= EDMA_TCD_BITER_LINKCH(linkch->chan);
       tcd->biter  = regval16;
     }
   else /* if (flags == EDMA_CONFIG_LINKTYPE_MAJORLINK)  Major link config */
@@ -638,7 +626,6 @@ static inline void s32k3xx_tcd_chanlink(uint8_t flags,
 static inline void s32k3xx_tcd_configure(struct s32k3xx_edmatcd_s *tcd,
                             const struct s32k3xx_edma_xfrconfig_s *config)
 {
-  tcd->flags    = config->flags;
   tcd->saddr    = config->saddr;
   tcd->soff     = config->soff;
   tcd->attr     = EDMA_TCD_ATTR_SSIZE(config->ssize) |  /* Transfer Attributes */
@@ -653,7 +640,7 @@ static inline void s32k3xx_tcd_configure(struct s32k3xx_edmatcd_s *tcd,
   tcd->doff     = config->doff;
   tcd->citer    = config->iter & EDMA_TCD_CITER_MASK;
   tcd->biter    = config->iter & EDMA_TCD_BITER_MASK;
-  tcd->csr      = config->flags & EDMA_CONFIG_LOOPDEST ?
+  tcd->csr      = config->flags & EDMA_CONFIG_LOOP_MASK ?
                                   0 : EDMA_TCD_CSR_DREQ;
   tcd->csr      |= config->flags & EDMA_CONFIG_INTHALF ?
                                   EDMA_TCD_CSR_INTHALF : 0;
@@ -686,6 +673,10 @@ static void s32k3xx_tcd_instantiate(struct s32k3xx_dmach_s *dmach,
 
   /* Push tcd into hardware TCD register */
 
+  /* Clear DONE bit first, otherwise ESG cannot be set */
+
+  putreg16(0,             base + S32K3XX_EDMA_TCD_CSR_OFFSET);
+
   putreg32(tcd->saddr,    base + S32K3XX_EDMA_TCD_SADDR_OFFSET);
   putreg16(tcd->soff,     base + S32K3XX_EDMA_TCD_SOFF_OFFSET);
   putreg16(tcd->attr,     base + S32K3XX_EDMA_TCD_ATTR_OFFSET);
@@ -696,9 +687,6 @@ static void s32k3xx_tcd_instantiate(struct s32k3xx_dmach_s *dmach,
   putreg16(tcd->citer,    base + S32K3XX_EDMA_TCD_CITER_OFFSET);
   putreg32(tcd->dlastsga, base + S32K3XX_EDMA_TCD_DLAST_SGA_OFFSET);
 
-  /* Clear DONE bit first, otherwise ESG cannot be set */
-
-  putreg16(0,             base + S32K3XX_EDMA_TCD_CSR_OFFSET);
   putreg16(tcd->csr,      base + S32K3XX_EDMA_TCD_CSR_OFFSET);
 
   putreg16(tcd->biter,    base + S32K3XX_EDMA_TCD_BITER_OFFSET);
@@ -727,29 +715,6 @@ static void s32k3xx_dmaterminate(struct s32k3xx_dmach_s *dmach, int result)
 
   putreg8(EDMA_CH_INT, S32K3XX_EDMA_TCD[chan] + S32K3XX_EDMA_CH_INT_OFFSET);
 
-  /* Check for an Rx (memory-to-peripheral/memory-to-memory) DMA transfer */
-
-  if (dmach->ttype == EDMA_MEM2MEM || dmach->ttype == EDMA_PERIPH2MEM)
-    {
-      /* Invalidate the cache to force reloads from memory. */
-
-#warning Missing logic
-    }
-
-  /* Perform the DMA complete callback */
-
-  if (dmach->callback)
-    {
-      dmach->callback((DMACH_HANDLE)dmach, dmach->arg, true, result);
-    }
-
-  /* Clear CSR to disable channel. Because if the given channel started,
-   * transfer CSR will be not zero. Because if it is the last transfer, DREQ
-   * will be set.  If not, ESG will be set.
-   */
-
-  putreg32(0, S32K3XX_EDMA_TCD[chan] + S32K3XX_EDMA_CH_CSR_OFFSET);
-
   /* Cancel next TCD transfer. */
 
   putreg32(0, S32K3XX_EDMA_TCD[chan] + S32K3XX_EDMA_TCD_DLAST_SGA_OFFSET);
@@ -763,7 +728,7 @@ static void s32k3xx_dmaterminate(struct s32k3xx_dmach_s *dmach, int result)
        * if not continue to free tcds in chain
        */
 
-       next = tcd->flags & EDMA_CONFIG_LOOPDEST ?
+       next = dmach->flags & EDMA_CONFIG_LOOPDEST ?
               NULL : (struct s32k3xx_edmatcd_s *)tcd->dlastsga;
 
        s32k3xx_tcd_free(tcd);
@@ -772,6 +737,13 @@ static void s32k3xx_dmaterminate(struct s32k3xx_dmach_s *dmach, int result)
   dmach->head = NULL;
   dmach->tail = NULL;
 #endif
+
+  /* Perform the DMA complete callback */
+
+  if (dmach->callback)
+    {
+      dmach->callback((DMACH_HANDLE)dmach, dmach->arg, true, result);
+    }
 
   dmach->callback = NULL;
   dmach->arg      = NULL;
@@ -801,6 +773,7 @@ static int s32k3xx_edma_interrupt(int irq, void *context, void *arg)
 
   uintptr_t regaddr;
   uint32_t  regval32;
+  uint32_t  errval;
   uint8_t   chan;
   int       result;
 
@@ -817,8 +790,8 @@ static int s32k3xx_edma_interrupt(int irq, void *context, void *arg)
   regval32 = getreg32(S32K3XX_EDMA_INT);
   if ((regval32 & EDMA_INT(chan)) != 0)
     {
-      /* An interrupt is pending.
-       * This should only happen if the channel is active.
+      /* An interrupt is pending. This should only happen if the channel is
+       * active.
        */
 
       DEBUGASSERT(dmach->state == S32K3XX_DMA_ACTIVE);
@@ -827,6 +800,11 @@ static int s32k3xx_edma_interrupt(int irq, void *context, void *arg)
 
       putreg8(EDMA_CH_INT, S32K3XX_EDMA_TCD[chan] +
               S32K3XX_EDMA_CH_INT_OFFSET);
+
+      /* Get the Error Status Register */
+
+      errval  = getreg32(S32K3XX_EDMA_TCD[chan] +
+                          S32K3XX_EDMA_CH_ES_OFFSET);
 
       /* Get the eDMA TCD Control and Status register value. */
 
@@ -837,15 +815,14 @@ static int s32k3xx_edma_interrupt(int irq, void *context, void *arg)
 
       if ((regaddr & EDMA_CH_CSR_DONE) != 0)
         {
-          /* Clear the pending DONE interrupt status. */
+          /* Clear the pending DONE (W1C) interrupt status. */
 
-          regaddr &= ~EDMA_CH_CSR_DONE;
           putreg32(regaddr, S32K3XX_EDMA_TCD[chan] +
                    S32K3XX_EDMA_CH_CSR_OFFSET);
-          result = OK;
+
+          result = errval & EDMA_CH_ES_ERR ? -EIO : OK;
         }
       else
-
         {
 #if CONFIG_S32K3XX_EDMA_NTCD > 0
           /* Perform the end-of-major-cycle DMA callback */
@@ -853,7 +830,7 @@ static int s32k3xx_edma_interrupt(int irq, void *context, void *arg)
           if (dmach->callback != NULL)
             {
               dmach->callback((DMACH_HANDLE)dmach, dmach->arg,
-                              false, 0);
+                              false, OK);
             }
 
           return OK;
@@ -867,7 +844,15 @@ static int s32k3xx_edma_interrupt(int irq, void *context, void *arg)
 
       /* Terminate the transfer when it is done. */
 
-      s32k3xx_dmaterminate(dmach, result);
+      if ((dmach->flags & EDMA_CONFIG_LOOP_MASK) == 0)
+        {
+          s32k3xx_dmaterminate(dmach, result);
+        }
+      else if (dmach->callback != NULL)
+        {
+          dmach->callback((DMACH_HANDLE)dmach, dmach->arg,
+                          true, result);
+        }
     }
 
   return OK;
@@ -971,19 +956,15 @@ void weak_function arm_dma_initialize(void)
     {
       /* Disable all DMA channels and DMA channel interrupts */
 
-      putreg32(0, S32K3XX_EDMA_TCD[i] + S32K3XX_EDMA_CH_CSR_OFFSET);
-    }
+      putreg32(EDMA_CH_INT, S32K3XX_EDMA_TCD[i] +
+               S32K3XX_EDMA_CH_INT_OFFSET);
+      putreg32(EDMA_CH_CSR_DONE, S32K3XX_EDMA_TCD[i] +
+               S32K3XX_EDMA_CH_CSR_OFFSET);
 
-  /* Clear all pending DMA channel interrupts */
+      /* Enable the channel interrupts at the NVIC (still disabled at
+       * the eDMA controller).
+       */
 
-  putreg32(0xffffffff, S32K3XX_EDMA_INT);
-
-  /* Enable the channel interrupts at the NVIC (still disabled at the eDMA
-   * controller).
-   */
-
-  for (i = 0; i < CONFIG_S32K3XX_EDMA_NTCD; i++)
-    {
       up_enable_irq(S32K3XX_IRQ_DMA_CH0 + i);
     }
 }
@@ -1177,11 +1158,15 @@ int s32k3xx_dmach_xfrsetup(DMACH_HANDLE *handle,
 #if CONFIG_S32K3XX_EDMA_NTCD > 0
   struct s32k3xx_edmatcd_s *tcd;
   struct s32k3xx_edmatcd_s *prev;
+  uint16_t mask = config->flags & EDMA_CONFIG_INTMAJOR ? 0 :
+                                  EDMA_TCD_CSR_INTMAJOR;
 #endif
   uint16_t regval16;
 
   DEBUGASSERT(dmach != NULL);
   dmainfo("dmach%u: %p config: %p\n", dmach->chan, dmach, config);
+
+  dmach->flags  = config->flags;
 
 #if CONFIG_S32K3XX_EDMA_NTCD > 0
   /* Scatter/gather DMA is supported */
@@ -1202,20 +1187,6 @@ int s32k3xx_dmach_xfrsetup(DMACH_HANDLE *handle,
 
   tcd->csr |= EDMA_TCD_CSR_INTMAJOR;
 
-  /* Is looped to it's self? */
-
-  if (config->flags & EDMA_CONFIG_LOOP_MASK)
-    {
-      /* Enable major link */
-
-      tcd->csr |= EDMA_TCD_CSR_MAJORELINK;
-
-      /* Set major linked channel back to this one */
-
-      tcd->csr   &= ~EDMA_TCD_CSR_MAJORLINKCH_MASK;
-      tcd->csr   |=  EDMA_TCD_CSR_MAJORLINKCH(dmach->chan);
-    }
-
 #ifdef CONFIG_S32K3XX_EDMA_BWC
   if (config->bwc > 0)
     {
@@ -1231,7 +1202,6 @@ int s32k3xx_dmach_xfrsetup(DMACH_HANDLE *handle,
 
       dmach->head  = tcd;
       dmach->tail  = tcd;
-      dmach->ttype = config->ttype;
 
       /* And instantiate the first TCD in the DMA channel TCD registers. */
 
@@ -1239,12 +1209,9 @@ int s32k3xx_dmach_xfrsetup(DMACH_HANDLE *handle,
     }
   else
     {
-      /* Cannot mix transfer types (only because of cache-related operations.
-       * this restriction could be removed with some effort).
-       */
+      /* Cannot mix transfer types */
 
-      if (dmach->ttype != config->ttype ||
-          dmach->flags & EDMA_CONFIG_LOOPDEST)
+      if (dmach->flags & EDMA_CONFIG_LOOP_MASK)
         {
           s32k3xx_tcd_free(tcd);
           return -EINVAL;
@@ -1256,8 +1223,9 @@ int s32k3xx_dmach_xfrsetup(DMACH_HANDLE *handle,
 
       prev           = dmach->tail;
       regval16       = prev->csr;
-      regval16      &= ~EDMA_TCD_CSR_DREQ;
+      regval16      &= ~(EDMA_TCD_CSR_DREQ | mask);
       regval16      |= EDMA_TCD_CSR_ESG;
+
       prev->csr      = regval16;
 
       prev->dlastsga = (uint32_t)tcd;
@@ -1279,7 +1247,7 @@ int s32k3xx_dmach_xfrsetup(DMACH_HANDLE *handle,
 
           regval16  = getreg16(S32K3XX_EDMA_TCD[dmach->chan]
                                + S32K3XX_EDMA_CH_CSR_OFFSET);
-          regval16 &= ~EDMA_TCD_CSR_DREQ;
+          regval16 &= ~(EDMA_TCD_CSR_DREQ | mask);
           regval16 |= EDMA_TCD_CSR_ESG;
           putreg16(regval16, S32K3XX_EDMA_TCD[dmach->chan]
                    + S32K3XX_EDMA_CH_CSR_OFFSET);
@@ -1310,9 +1278,8 @@ int s32k3xx_dmach_xfrsetup(DMACH_HANDLE *handle,
 
   /* Configure channel TCD registers to the values specified in config. */
 
-  /* s32k3xx_tcd_configure((struct s32k3xx_edmatcd_s *)
-   *                    S32K3XX_EDMA_TCD_BASE(dmach->chan), config);
-   */
+  s32k3xx_tcd_configure((struct s32k3xx_edmatcd_s *)
+                         S32K3XX_EDMA_TCD_BASE(dmach->chan), config);
 
   /* Enable the DONE interrupt when the major iteration count completes. */
 
@@ -1320,35 +1287,6 @@ int s32k3xx_dmach_xfrsetup(DMACH_HANDLE *handle,
                    + S32K3XX_EDMA_CH_CSR_OFFSET, 0,
               EDMA_TCD_CSR_INTMAJOR);
 #endif
-
-  /* Check for an Rx (memory-to-peripheral/memory-to-memory) DMA transfer */
-
-  if (dmach->ttype == EDMA_MEM2MEM || dmach->ttype == EDMA_PERIPH2MEM)
-    {
-      /* Invalidate caches associated with the destination DMA memory.
-       * REVISIT:  nbytes is the number of bytes transferred on each
-       * minor loop.  The following is only valid when the major loop
-       * is one.
-       */
-
-      up_invalidate_dcache((uintptr_t)config->daddr,
-                           (uintptr_t)config->daddr + config->nbytes);
-    }
-
-  /* Check for an Tx (peripheral-to-memory/memory-to-memory) DMA transfer */
-
-  if (dmach->ttype == EDMA_MEM2MEM || dmach->ttype == EDMA_MEM2PERIPH)
-    {
-      /* Clean caches associated with the source DMA memory.
-       * REVISIT:  nbytes is the number of bytes transferred on each
-       * minor loop.  The following is only valid when the major loop
-       * is one.
-       */
-#warning Missing logic
-
-      up_clean_dcache((uintptr_t)config->saddr,
-                      (uintptr_t)config->saddr + config->nbytes);
-    }
 
   /* Set the DMAMUX source and enable and optional trigger */
 
@@ -1428,13 +1366,13 @@ int s32k3xx_dmach_start(DMACH_HANDLE handle, edma_callback_t callback,
 
       /* Enable channel ERROR interrupts */
 
-#if 0
-      regval8         = EDMA_SEEI(chan);
-      putreg8(regval8, S32K3XX_EDMA_SEEI);
+      regval  = getreg32(S32K3XX_EDMA_TCD[chan] +
+                          S32K3XX_EDMA_CH_CSR_OFFSET);
+      regval |= EDMA_CH_CSR_EEI;
+      putreg32(regval, S32K3XX_EDMA_TCD[chan] + S32K3XX_EDMA_CH_CSR_OFFSET);
 
       /* Enable the DMA request for this channel */
 
-#endif
       regval         = getreg32(S32K3XX_EDMA_TCD[chan]
                        + S32K3XX_EDMA_CH_CSR_OFFSET);
       regval        |= EDMA_CH_CSR_ERQ;

@@ -130,7 +130,11 @@
 #  define EDMA_CONFIG_LOOPSRC            (1 << EDMA_CONFIG_LOOP_SHIFT) /* Source looping */
 #  define EDMA_CONFIG_LOOPDEST           (2 << EDMA_CONFIG_LOOP_SHIFT) /* Dest looping */
 
-#define EDMA_CONFIG_INTHALF              (1 << 3) /* Bits 3: Int on HALF */
+#define EDMA_CONFIG_INTHALF              (1 << 4) /* Bits 4: Int on HALF */
+#define EDMA_CONFIG_INTMAJOR             (1 << 5) /* Bits 5: Int on all Major completion
+                                                   * Default is only on last completion
+                                                   * if using scatter gather
+                                                   */
 
 /****************************************************************************
  * Public Types
@@ -139,15 +143,6 @@
 typedef void *DMACH_HANDLE;
 typedef void (*edma_callback_t)(DMACH_HANDLE handle,
                                 void *arg, bool done, int result);
-
-/* eDMA transfer type */
-
-enum s32k3xx_edma_xfrtype_e
-{
-  EDMA_MEM2MEM = 0,      /* Transfer from memory to memory */
-  EDMA_PERIPH2MEM,       /* Transfer from peripheral to memory */
-  EDMA_MEM2PERIPH,       /* Transfer from memory to peripheral */
-};
 
 /* eDMA transfer sises */
 
