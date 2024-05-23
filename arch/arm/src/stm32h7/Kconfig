@@ -284,10 +284,57 @@ config STM32H7_HAVE_SMPS
 	bool
 	default n
 
-config STM32H7_PWR_DIRECT_SMPS_SUPPLY
-	bool "Use direct SMPS supply mode"
+choice
+	prompt "STM32 H7 Power Supply Selection"
+	default STM32H7_PWR_DIRECT_SMPS_SUPPLY
 	depends on STM32H7_HAVE_SMPS
+	---help---
+	    The STM32H7x5 and STM32H7x7 support power supply configrations for the VCORE core domain and an external supply,
+	    by configuring the SMPS step-down converter and voltage regulator.
+	    Note:The SMPS step-down converter is not available on all packages.
+
+        Select the power supply mode of your board
+
+        The following ID information can be found in the datasheet (Reference Manual RM0399).
+        The user selects the appropriate mode.
+	    - ID:1 LDO supply mode used 'STM32H7_PWR_LDO_SUPPLY' macro
+		    -> SDEN(SCUEN) = 0, LDOEN = 1, BYPASS = 0
+	    - ID:2 Direct SMPS supply mode used 'STM32H7_PWR_DIRECT_SMPS_SUPPLY' macro
+		    -> SDEXTHP = 0, SDEN(SCUEN) = 1, LDOEN = 0, BYPASS = 0
+	    - ID:3 SMPS supplies LDO mode used 'STM32H7_PWR_SMPS_LDO' macro
+		    -> SDLEVEL = need to set, SDEXTHP = 0, SDEN(SCUEN) = 1, LDOEN = 1, BYPASS = 0 (This macro is under construction)
+	    - ID:4 External SMPS supply, suppies LDO mode used 'STM32H7_PWR_EXT_SMPS_LDO' macro
+		    -> SDLEVEL = need to set, SDEXTHP = 1, SDEN(SCUEN) = 1, LDOEN = 1, BYPASS = 0 (This macro is under construction)
+	    - ID:5 External SMPS supply and bypass mode used 'STM32H7_PWR_EXT_SMPS_BYPASS' macro
+		    -> SDLEVEL = need to set, SDEXTHP = 1, SDEN(SCUEN) = 1, LDOEN = 0, BYPASS = 1 (This macro is under construction)
+	    - ID:6 Bypass mode used 'STM32H7_PWR_BYPASS' macro
+		    -> SDEN(SCUEN) = 0, LDOEN = 0, BYPASS = 1 (This macro is under construction)
+
+config STM32H7_PWR_LDO_SUPPLY
+	bool "Use LDO supply mode"
 	default n
+
+config STM32H7_PWR_DIRECT_SMPS_SUPPLY
+	bool "Use Direct SMPS supply mode"
+	default n
+
+config STM32H7_PWR_SMPS_LDO
+	bool "Use SMPS supplies LDO mode (under construction)"
+	default n
+
+config STM32H7_PWR_EXT_SMPS_LDO
+	bool "Use External SMPS supply, suppies LDO mode (under construction)"
+	default n
+
+config STM32H7_PWR_EXT_SMPS_BYPASS
+	bool "Use External SMPS supply and bypass mode (under construction)"
+	default n
+
+config STM32H7_PWR_BYPASS
+	bool "Use Bypass mode (under construction)"
+	default n
+
+endchoice #"STM32 H7 Power Supply Selection"
 
 config STM32H7_IO_CONFIG_A
 	bool

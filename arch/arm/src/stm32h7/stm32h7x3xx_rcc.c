@@ -886,6 +886,20 @@ void stm32_stdclockconfig(void)
           STM32_PWR_CR3_SMPSEXTHP | STM32_PWR_CR3_SMPSLEVEL_MASK);
       regval |= STM32_PWR_CR3_SCUEN;
       putreg32(regval, STM32_PWR_CR3);
+#elif defined(CONFIG_STM32H7_PWR_LDO_SUPPLY)
+      regval = getreg32(STM32_PWR_CR3);
+      regval &= ~(STM32_PWR_CR3_BYPASS | STM32_PWR_CR3_SCUEN |
+          STM32_PWR_CR3_SMPSEXTHP | STM32_PWR_CR3_SMPSLEVEL_MASK);
+      regval |= STM32_PWR_CR3_LDOEN;
+      putreg32(regval, STM32_PWR_CR3);
+#elif defined(CONFIG_STM32H7_PWR_SMPS_LDO) || \
+      defined(CONFIG_STM32H7_PWR_EXT_SMPS_LDO) || \
+      defined(CONFIG_STM32H7_PWR_EXT_SMPS_BYPASS) || \
+      defined(CONFIG_STM32H7_PWR_BYPASS)
+      /* These 4 cases of power supply mode have no macros created.
+       * Selecting one of these modes will cause a compile error.
+       */
+      #error Macro of this power supply mode is not created yet.
 #else
       regval = getreg32(STM32_PWR_CR3);
       regval |= STM32_PWR_CR3_LDOEN | STM32_PWR_CR3_SCUEN;
